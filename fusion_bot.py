@@ -208,6 +208,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
             casting_data.setdefault(user_id, {})["age"] = text
             context.user_data["waiting_for"] = None
+            # ПЕРЕХОДИМ К ВЫБОРУ НАПРАВЛЕНИЯ
             await ask_direction(update, context, user_id)
         
         elif waiting_for == "experience_place":
@@ -219,6 +220,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Нажми /start, чтобы начать")
     except Exception as e:
         logging.error(f"handle_text ERROR: {e}")
+        await update.message.reply_text(
+            "⚠️ Что-то пошло не так. Попробуй ещё раз.",
+            parse_mode="Markdown"
+        )
 
 
 async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int = None):
@@ -335,7 +340,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         answers = user_answers.get(user_id, [])
         answers_text = "\n".join([f"• {a}" for a in answers]) if answers else "Нет ответов"
         
-        # --- ОТПРАВКА АДМИНУ ---
         admin_message = (
             f"📩 **НОВАЯ ЗАЯВКА НА КАСТИНГ!**\n\n"
             f"👤 Имя и фамилия: {data.get('name', '—')}\n"
@@ -354,7 +358,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         except Exception as e:
             logging.error(f"Ошибка при отправке админу: {e}")
         
-        # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ---
         recommendations = {
             "music": (
                 "🎤 **Для вокалистов и музыкантов:**\n"
@@ -392,7 +395,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
             "🔥 **Ждём тебя! Всё получится!**"
         )
         
-        # --- ОТПРАВКА ФИНАЛЬНОГО СООБЩЕНИЯ ---
         try:
             if update.callback_query:
                 await update.callback_query.edit_message_text(final_text, parse_mode="Markdown")
