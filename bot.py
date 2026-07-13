@@ -216,3 +216,24 @@ def main():
 
 if __name__ == "__main__":
     main()
+# ==========================================
+# ЗАПУСК БОТА (Добавьте это в самый низ bot.py)
+# ==========================================
+if __name__ == "__main__":
+    # Создаем приложение
+    application = Application.builder().token(TOKEN).build()
+
+    # Регистрируем хендлеры (если вы их еще не зарегистрировали выше в коде)
+    application.add_handler(CommandHandler("start", start))
+    # Если у вас есть другие хендлеры, добавьте их здесь так же
+
+    # ЗАПУСК
+    # Если вы хотите использовать WEBHOOK (для Railway):
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TOKEN,  # Обычно для безопасности используют токен как путь
+        webhook_url=f"{WEBHOOK_URL}{TOKEN}"
+    )
+    # Если вы хотите использовать POLLING (обычный режим), замените run_webhook выше на:
+    # application.run_polling()
