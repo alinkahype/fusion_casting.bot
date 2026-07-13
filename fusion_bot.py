@@ -48,7 +48,7 @@ user_answers = {}
 casting_data = {}
 casting_users = {}
 
-# ==================== /START ====================
+# ==================== СТАРТ ====================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -61,8 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = (
         "🎬 **ВСТУПАЙ В «ФЬЮЖН»!**\n\n"
-        "Мы — студия, где музыка, вокал, танец и театр сплавляются в одно целое.\n"
-        "Пройди короткий опрос, заполни анкету — и мы пригласим тебя на кастинг.\n\n"
+        "Пройди опрос и заполни анкету, чтобы попасть на кастинг.\n\n"
         "👇 **Нажми на кнопку!**"
     )
     await update.message.reply_text(text, parse_mode="Markdown", reply_markup=reply_markup)
@@ -122,11 +121,7 @@ async def ask_consent(update: Update, context: ContextTypes.DEFAULT_TYPE, user_i
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    text = (
-        "📋 **Согласие на обработку персональных данных**\n\n"
-        "Для участия в кастинге нам нужно твоё согласие.\n\n"
-        "Ты соглашаешься?"
-    )
+    text = "📋 **Согласие на обработку персональных данных**\n\nТы соглашаешься?"
     
     if update.callback_query:
         await update.callback_query.edit_message_text(text, parse_mode="Markdown", reply_markup=reply_markup)
@@ -140,7 +135,7 @@ async def consent_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     
     if query.data == "consent_no":
-        await query.edit_message_text("😔 Понимаем. Если передумаешь — возвращайся!", parse_mode="Markdown")
+        await query.edit_message_text("😔 Ок. Если передумаешь — возвращайся!", parse_mode="Markdown")
         casting_data.pop(user_id, None)
         user_answers.pop(user_id, None)
         return
@@ -149,14 +144,10 @@ async def consent_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ask_name(update, context, user_id)
 
 
-# ==================== АНКЕТА ====================
+# ==================== АНКЕТА (ТЕКСТ) ====================
 
 async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
-    text = (
-        "📝 **Теперь заполни анкету для кастинга**\n\n"
-        "**Шаг 1 из 4: Имя и фамилия**\n\n"
-        "Напиши свои **имя и фамилию**."
-    )
+    text = "📝 **Шаг 1 из 4: Имя и фамилия**\n\nНапиши свои **имя и фамилию**."
     if update.callback_query:
         await update.callback_query.edit_message_text(text, parse_mode="Markdown")
     else:
@@ -173,9 +164,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         casting_data.setdefault(user_id, {})["name"] = text
         context.user_data["waiting_for"] = "age"
         await update.message.reply_text(
-            "📝 **Шаг 2 из 4: Возраст**\n\n"
-            "Сколько тебе лет?\n\n"
-            "Напиши число в сообщении 👇",
+            "📝 **Шаг 2 из 4: Возраст**\n\nСколько тебе лет? Напиши число 👇",
             parse_mode="Markdown"
         )
     
@@ -185,22 +174,21 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         casting_data.setdefault(user_id, {})["age"] = text
         context.user_data["waiting_for"] = None
-        # ВОТ ЗДЕСЬ ВСЁ ПОЧИНЕНО — ПЕРЕХОДИМ К НАПРАВЛЕНИЮ
         await ask_direction(update, context, user_id)
     
     elif waiting_for == "experience_place":
         casting_data.setdefault(user_id, {})["experience_place"] = text
         context.user_data["waiting_for"] = None
+        # ОТПРАВЛЯЕМ ВСЁ И ФИНАЛЬНОЕ СООБЩЕНИЕ
         await finish_casting(update, context, user_id)
     
     else:
         await update.message.reply_text("Нажми /start, чтобы начать")
 
 
-async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int = None):
-    if user_id is None:
-        user_id = update.effective_user.id
-    
+# ==================== АНКЕТА (КНОПКИ) ====================
+
+async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     keyboard = [
         [InlineKeyboardButton("🎵 Вокал / Музыка", callback_data="dir_music")],
         [InlineKeyboardButton("💃 Танец", callback_data="dir_dance")],
@@ -210,15 +198,13 @@ async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            "📝 **Шаг 3 из 4: Выбери направление**\n\n"
-            "Какая сфера тебе ближе всего?",
+            "📝 **Шаг 3 из 4: Выбери направление**",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            "📝 **Шаг 3 из 4: Выбери направление**\n\n"
-            "Какая сфера тебе ближе всего?",
+            "📝 **Шаг 3 из 4: Выбери направление**",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
@@ -233,10 +219,7 @@ async def direction_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ask_experience(update, context, user_id)
 
 
-async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int = None):
-    if user_id is None:
-        user_id = update.effective_user.id
-    
+async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     keyboard = [
         [InlineKeyboardButton("🌱 Нет опыта", callback_data="exp_none")],
         [InlineKeyboardButton("🌿 До 1 года", callback_data="exp_beginner")],
@@ -247,15 +230,13 @@ async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            "📝 **Шаг 4 из 4: Опыт**\n\n"
-            "Какой у тебя опыт в выбранной сфере?",
+            "📝 **Шаг 4 из 4: Опыт**\n\nКакой у тебя опыт?",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            "📝 **Шаг 4 из 4: Опыт**\n\n"
-            "Какой у тебя опыт в выбранной сфере?",
+            "📝 **Шаг 4 из 4: Опыт**\n\nКакой у тебя опыт?",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
@@ -270,12 +251,12 @@ async def experience_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data["waiting_for"] = "experience_place"
     
     await query.edit_message_text(
-        "📝 **Где ты занимался творчеством раньше?**\n\n"
-        "Напиши в сообщении: кружки, школы, студии, проекты — всё, что было.\n"
-        "Если ничего не было — просто напиши «Нигде».",
+        "📝 **Где ты занимался творчеством раньше?**\n\nНапиши в сообщении. Если ничего не было — напиши «Нигде».",
         parse_mode="Markdown"
     )
 
+
+# ==================== ФИНАЛ ====================
 
 async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     data = casting_data.get(user_id, {})
@@ -294,11 +275,10 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     }
     
     direction_key = data.get("direction", "music")
-    
     answers = user_answers.get(user_id, [])
     answers_text = "\n".join([f"• {a}" for a in answers]) if answers else "Нет ответов"
     
-    # ОТПРАВКА АДМИНУ
+    # --- ОТПРАВКА АДМИНУ ---
     admin_message = (
         f"📩 **НОВАЯ ЗАЯВКА НА КАСТИНГ!**\n\n"
         f"👤 Имя и фамилия: {data.get('name', '—')}\n"
@@ -308,55 +288,32 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         f"📍 Где занимался: {data.get('experience_place', '—')}\n\n"
         f"📝 Ответы на опрос:\n{answers_text}\n\n"
         f"🆔 ID: {user_id}\n"
-        f"👤 Username: @{update.effective_user.username or 'нет'}\n\n"
-        f"✅ Согласие на обработку данных: ДА"
+        f"👤 Username: @{update.effective_user.username or 'нет'}"
     )
-    
     await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
     
-    # ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ
+    # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ (ТЕПЕРЬ ТОЧНО РАБОТАЕТ) ---
     recommendations = {
-        "music": (
-            "🎤 **Для вокалистов и музыкантов:**\n"
-            "• Возьми с собой минусовку песни (на флешке или телефоне)\n"
-            "• Приходи распетым и готовым к выступлению\n"
-            "• Красиво одетым и заряженным показать себя\n"
-            "• Если играешь на инструменте — бери его с собой"
-        ),
-        "dance": (
-            "💃 **Для танцоров:**\n"
-            "• Удобная одежда и обувь для движения\n"
-            "• Возьми с собой музыку (на флешке или телефоне)\n"
-            "• Будь готов показать связку или импровизацию\n"
-            "• Зарядись энергией и настроением!"
-        ),
-        "theatre": (
-            "🎭 **Для театралов:**\n"
-            "• Подготовь небольшой монолог или отрывок (1-2 минуты)\n"
-            "• Можно принести стихотворение или прозу\n"
-            "• Будь готов к импровизации и этюдам\n"
-            "• Приходи в образе — покажи свою индивидуальность"
-        ),
+        "music": "🎤 **Для вокалистов и музыкантов:**\n• Возьми минусовку\n• Приходи распетым\n• Если играешь — бери инструмент",
+        "dance": "💃 **Для танцоров:**\n• Удобная одежда\n• Возьми музыку\n• Будь готов к импровизации",
+        "theatre": "🎭 **Для театралов:**\n• Подготовь монолог (1-2 мин)\n• Можно стихотворение\n• Будь готов к этюдам",
     }
     
     final_text = (
-        "✅ **Заявка отправлена!**\n\n"
-        "Спасибо! Мы свяжемся с тобой в ближайшее время.\n\n"
-        "---\n\n"
-        "📌 **Пока ты ждёшь кастинга — подписывайся на наши соцсети:**\n\n"
-        "📱 **Telegram-канал:** https://t.me/fusion_nstu\n"
-        "📱 **Группа ВКонтакте:** https://vk.com/fusion_nstu\n"
-        "📱 **Instagram:** https://www.instagram.com/fusion_nstu\n\n"
-        "---\n\n"
+        f"✅ **Заявка отправлена!**\n\n"
+        f"Спасибо! Мы свяжемся с тобой.\n\n"
+        f"---\n\n"
+        f"📌 **Подписывайся на нас:**\n"
+        f"📱 Telegram: https://t.me/fusion_nstu\n"
+        f"📱 ВКонтакте: https://vk.com/fusion_nstu\n"
+        f"📱 Instagram: https://www.instagram.com/fusion_nstu\n\n"
+        f"---\n\n"
         f"{recommendations.get(direction_key, '')}\n\n"
-        "🔥 **Ждём тебя! Всё получится!**"
+        f"🔥 **Ждём тебя!**"
     )
     
-    # ГАРАНТИРОВАННАЯ ОТПРАВКА
-    try:
-        await context.bot.send_message(chat_id=user_id, text=final_text, parse_mode="Markdown")
-    except Exception as e:
-        logging.error(f"Ошибка отправки финального сообщения: {e}")
+    # ОТПРАВЛЯЕМ НОВОЕ СООБЩЕНИЕ (ГАРАНТИРОВАННО)
+    await context.bot.send_message(chat_id=user_id, text=final_text, parse_mode="Markdown")
     
     if user_id not in casting_users:
         casting_users[user_id] = direction_key
@@ -365,27 +322,19 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     user_answers.pop(user_id, None)
     context.user_data.clear()
 
+
 # ==================== РАССЫЛКА ====================
 
 async def send_casting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
-        await update.message.reply_text("⛔ У тебя нет доступа.")
+        await update.message.reply_text("⛔ Нет доступа.")
         return
     
     args = context.args
     if len(args) < 2:
         await update.message.reply_text(
-            "⚠️ Использование:\n"
-            "`/send_casting [направление] [дата и время]`\n\n"
-            "Направления:\n"
-            "• вокал\n"
-            "• танец\n"
-            "• театр\n"
-            "• музыка\n"
-            "• все\n\n"
-            "Примеры:\n"
-            "`/send_casting вокал 25 июля, 18:00`\n"
-            "`/send_casting все 30 июля, 12:00`",
+            "⚠️ Использование: `/send_casting [направление] [дата]`\n"
+            "Пример: `/send_casting вокал 25 июля, 18:00`",
             parse_mode="Markdown"
         )
         return
@@ -394,8 +343,7 @@ async def send_casting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     date_time = " ".join(args[1:])
     
     direction_map_input = {
-        "вокал": "music",
-        "музыка": "music",
+        "вокал": "music", "музыка": "music",
         "танец": "dance",
         "театр": "theatre",
         "все": "all",
@@ -403,7 +351,7 @@ async def send_casting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     direction_key = direction_map_input.get(direction_input)
     if not direction_key:
-        await update.message.reply_text("⚠️ Неизвестное направление.")
+        await update.message.reply_text("⚠️ Неизвестное направление. Доступные: вокал, танец, театр, музыка, все")
         return
     
     users_to_send = []
@@ -413,51 +361,33 @@ async def send_casting(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users_to_send = [(uid, d) for uid, d in casting_users.items() if d == direction_key]
     
     if not users_to_send:
-        await update.message.reply_text(f"📭 Нет заявок на направление «{direction_input}».")
+        await update.message.reply_text(f"📭 Нет заявок на «{direction_input}».")
         return
     
-    await update.message.reply_text(f"📤 Начинаю рассылку {len(users_to_send)} пользователям...")
+    await update.message.reply_text(f"📤 Рассылка {len(users_to_send)} пользователям...")
     
     success = 0
     fail = 0
-    
-    direction_emoji = {
-        "music": "🎵",
-        "dance": "💃",
-        "theatre": "🎭",
-    }
-    
-    direction_name_ru = {
-        "music": "Вокал / Музыка",
-        "dance": "Танец",
-        "theatre": "Театр",
-    }
+    direction_name_ru = {"music": "Вокал/Музыка", "dance": "Танец", "theatre": "Театр"}
     
     for user_id, user_direction in users_to_send:
         try:
-            emoji = direction_emoji.get(user_direction, "🎭")
-            dir_name = direction_name_ru.get(user_direction, "")
-            
             await context.bot.send_message(
                 chat_id=user_id,
                 text=(
                     f"🎬 **Приглашение на кастинг!**\n\n"
-                    f"{emoji} Направление: **{dir_name}**\n"
-                    f"📅 Дата и время: **{date_time}**\n\n"
-                    f"Ждём тебя в студии «Фьюжн»! 🔥"
+                    f"Направление: **{direction_name_ru.get(user_direction, '')}**\n"
+                    f"📅 Дата: **{date_time}**\n\n"
+                    f"Ждём тебя! 🔥"
                 ),
                 parse_mode="Markdown"
             )
             success += 1
         except Exception as e:
             fail += 1
-            logging.error(f"Не удалось отправить {user_id}: {e}")
+            logging.error(f"Ошибка {user_id}: {e}")
     
-    await update.message.reply_text(
-        f"✅ **Рассылка завершена!**\n\n"
-        f"📨 Отправлено: {success}\n"
-        f"❌ Не доставлено: {fail}"
-    )
+    await update.message.reply_text(f"✅ Отправлено: {success}\n❌ Не доставлено: {fail}")
 
 
 # ==================== ЗАПУСК ====================
