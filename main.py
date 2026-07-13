@@ -234,6 +234,7 @@ if __name__ == "__main__":
         port=PORT,
         url_path=TOKEN,  # Обычно для безопасности используют токен как путь
         webhook_url=f"{WEBHOOK_URL}{TOKEN}"
+        application.run_polling()
     )
     # Если вы хотите использовать POLLING (обычный режим), замените run_webhook выше на:
     # application.run_polling()
