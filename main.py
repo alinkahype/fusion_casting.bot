@@ -220,16 +220,14 @@ if __name__ == "__main__":
 # ЗАПУСК БОТА (Добавьте это в самый низ bot.py)
 # ==========================================
 if __name__ == "__main__":
+    # Создаем приложение
     application = Application.builder().token(TOKEN).build()
-    
-    # Если хендлеры не добавлены выше, добавьте их здесь
-    application.add_handler(CommandHandler("start", start))
-    # ... добавьте сюда другие ваши хендлеры ...
 
-    # Просто запускаем поллинг (не нужен вебхук, порт и URL)
-    print("Бот запускается...")
+    # Регистрируем обработчики команд (проверьте, что они у вас есть и импортированы)
+    # Если у вас они зарегистрированы выше по коду, эту часть можно пропустить.
+    application.add_handler(CommandHandler("start", start))
+    # application.add_handler(MessageHandler(filters.TEXT, handle_text)) # если есть такой хендлер
+
+    # ЗАПУСК БЕЗ ВЕБХУКОВ (используем poll)
+    print("✅ Бот запускается в режиме Polling...")
     application.run_polling()
-        
-    )
-    # Если вы хотите использовать POLLING (обычный режим), замените run_webhook выше на:
-    # application.run_polling()
