@@ -8,7 +8,7 @@ ADMIN_ID = 1431254201
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-# --- ВОПРОСЫ ---
+# --- ВОПРОСЫ (ПРАВИЛЬНЫЕ) ---
 QUESTIONS = [
     {
         "q": "Хочешь ли ты в универе заниматься активной творческой деятельностью и быть в центре коллектива?",
@@ -37,7 +37,7 @@ QUESTIONS = [
     {
         "q": "Что бы ты хотел делать в студии?",
         "options": [
-            ("Петь или играть", "do_music"),
+            ("Петь или играть на инструменте", "do_music"),
             ("Танцевать", "do_dance"),
             ("Играть на сцене", "do_theatre"),
         ],
@@ -53,9 +53,10 @@ casting_users = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
+    # ПОЛНАЯ ОЧИСТКА
     user_answers.pop(user_id, None)
     casting_data.pop(user_id, None)
-    context.user_data.pop("waiting_for", None)
+    context.user_data.clear()
     
     keyboard = [[InlineKeyboardButton("🎯 Пройти опрос", callback_data="start_quiz")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -72,26 +73,29 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик кнопки 'Пройти опрос'"""
     try:
         query = update.callback_query
         await query.answer()
         user_id = query.from_user.id
         
+        # ПОЛНАЯ ОЧИСТКА
         user_answers.pop(user_id, None)
         casting_data.pop(user_id, None)
-        context.user_data.pop("waiting_for", None)
+        context.user_data.clear()
         
         user_answers[user_id] = []
         await ask_question(update, context, 0)
     except Exception as e:
+        logging.error(f"start_quiz ERROR: {e}")
         await update.callback_query.edit_message_text(
             "⚠️ Что-то пошло не так. Попробуй ещё раз.",
             parse_mode="Markdown"
         )
-        logging.error(f"start_quiz: {e}")
 
 
 async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE, q_index: int):
+    """Показывает вопрос"""
     try:
         question = QUESTIONS[q_index]
         keyboard = [
@@ -106,10 +110,11 @@ async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE, q_ind
         else:
             await update.message.reply_text(text, parse_mode="Markdown", reply_markup=reply_markup)
     except Exception as e:
-        logging.error(f"ask_question: {e}")
+        logging.error(f"ask_question ERROR: {e}")
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик ответов на вопросы"""
     try:
         query = update.callback_query
         await query.answer()
@@ -126,7 +131,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             casting_data[user_id] = {}
             await ask_consent(update, context, user_id)
     except Exception as e:
-        logging.error(f"button_handler: {e}")
+        logging.error(f"button_handler ERROR: {e}")
 
 
 # ==================== СОГЛАСИЕ ====================
@@ -168,7 +173,7 @@ async def consent_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         casting_data[user_id]["consent"] = True
         await ask_name(update, context, user_id)
     except Exception as e:
-        logging.error(f"consent_handler: {e}")
+        logging.error(f"consent_handler ERROR: {e}")
 
 
 # ==================== АНКЕТА ====================
@@ -218,7 +223,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("Нажми /start, чтобы начать")
     except Exception as e:
-        logging.error(f"handle_text: {e}")
+        logging.error(f"handle_text ERROR: {e}")
 
 
 async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int = None):
@@ -248,7 +253,7 @@ async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user
                 reply_markup=reply_markup
             )
     except Exception as e:
-        logging.error(f"ask_direction: {e}")
+        logging.error(f"ask_direction ERROR: {e}")
 
 
 async def direction_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -260,7 +265,7 @@ async def direction_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         casting_data[user_id]["direction"] = direction
         await ask_experience(update, context, user_id)
     except Exception as e:
-        logging.error(f"direction_handler: {e}")
+        logging.error(f"direction_handler ERROR: {e}")
 
 
 async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int = None):
@@ -291,7 +296,7 @@ async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, use
                 reply_markup=reply_markup
             )
     except Exception as e:
-        logging.error(f"ask_experience: {e}")
+        logging.error(f"ask_experience ERROR: {e}")
 
 
 async def experience_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -310,7 +315,7 @@ async def experience_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
             parse_mode="Markdown"
         )
     except Exception as e:
-        logging.error(f"experience_handler: {e}")
+        logging.error(f"experience_handler ERROR: {e}")
 
 
 async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
@@ -350,8 +355,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         
         try:
             await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
-            
-            # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ---
             
             recommendations = {
                 "music": (
@@ -402,12 +405,13 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
             )
             logging.error(f"Ошибка при отправке админу: {e}")
         
+        # ПОЛНАЯ ОЧИСТКА
         casting_data.pop(user_id, None)
         user_answers.pop(user_id, None)
-        context.user_data.pop("waiting_for", None)
+        context.user_data.clear()
         
     except Exception as e:
-        logging.error(f"finish_casting: {e}")
+        logging.error(f"finish_casting ERROR: {e}")
 
 
 # ==================== РАССЫЛКА ====================
@@ -508,7 +512,7 @@ async def send_casting(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"❌ Не доставлено: {fail}"
         )
     except Exception as e:
-        logging.error(f"send_casting: {e}")
+        logging.error(f"send_casting ERROR: {e}")
 
 
 # ==================== ОБРАБОТЧИК ОШИБОК ====================
