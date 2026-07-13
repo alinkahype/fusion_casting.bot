@@ -53,7 +53,6 @@ casting_users = {}
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
-    # ПОЛНАЯ ОЧИСТКА
     user_answers.pop(user_id, None)
     casting_data.pop(user_id, None)
     context.user_data.clear()
@@ -73,13 +72,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик кнопки 'Пройти опрос'"""
     try:
         query = update.callback_query
         await query.answer()
         user_id = query.from_user.id
         
-        # ПОЛНАЯ ОЧИСТКА
         user_answers.pop(user_id, None)
         casting_data.pop(user_id, None)
         context.user_data.clear()
@@ -95,7 +92,6 @@ async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE, q_index: int):
-    """Показывает вопрос"""
     try:
         question = QUESTIONS[q_index]
         keyboard = [
@@ -114,7 +110,6 @@ async def ask_question(update: Update, context: ContextTypes.DEFAULT_TYPE, q_ind
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик ответов на вопросы"""
     try:
         query = update.callback_query
         await query.answer()
@@ -340,6 +335,7 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         answers = user_answers.get(user_id, [])
         answers_text = "\n".join([f"• {a}" for a in answers]) if answers else "Нет ответов"
         
+        # --- ОТПРАВКА АДМИНУ ---
         admin_message = (
             f"📩 **НОВАЯ ЗАЯВКА НА КАСТИНГ!**\n\n"
             f"👤 Имя и фамилия: {data.get('name', '—')}\n"
@@ -359,7 +355,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
             logging.error(f"Ошибка при отправке админу: {e}")
         
         # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ---
-        
         recommendations = {
             "music": (
                 "🎤 **Для вокалистов и музыкантов:**\n"
@@ -397,15 +392,14 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
             "🔥 **Ждём тебя! Всё получится!**"
         )
         
-        # ОТПРАВКА ФИНАЛЬНОГО СООБЩЕНИЯ
+        # --- ОТПРАВКА ФИНАЛЬНОГО СООБЩЕНИЯ ---
         try:
             if update.callback_query:
                 await update.callback_query.edit_message_text(final_text, parse_mode="Markdown")
             else:
                 await update.message.reply_text(final_text, parse_mode="Markdown")
         except Exception as e:
-            logging.error(f"Ошибка при отправке финального сообщения: {e}")
-            # Запасной вариант — отправить новое сообщение
+            logging.error(f"Ошибка при отправке финального: {e}")
             await context.bot.send_message(
                 chat_id=user_id,
                 text=final_text,
@@ -415,7 +409,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         if user_id not in casting_users:
             casting_users[user_id] = direction_key
         
-        # ПОЛНАЯ ОЧИСТКА
         casting_data.pop(user_id, None)
         user_answers.pop(user_id, None)
         context.user_data.clear()
