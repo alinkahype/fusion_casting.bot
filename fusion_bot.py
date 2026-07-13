@@ -298,6 +298,7 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     answers = user_answers.get(user_id, [])
     answers_text = "\n".join([f"• {a}" for a in answers]) if answers else "Нет ответов"
     
+    # ОТПРАВКА АДМИНУ
     admin_message = (
         f"📩 **НОВАЯ ЗАЯВКА НА КАСТИНГ!**\n\n"
         f"👤 Имя и фамилия: {data.get('name', '—')}\n"
@@ -313,6 +314,7 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     
     await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
     
+    # ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ
     recommendations = {
         "music": (
             "🎤 **Для вокалистов и музыкантов:**\n"
@@ -350,7 +352,11 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         "🔥 **Ждём тебя! Всё получится!**"
     )
     
-    await context.bot.send_message(chat_id=user_id, text=final_text, parse_mode="Markdown")
+    # ГАРАНТИРОВАННАЯ ОТПРАВКА
+    try:
+        await context.bot.send_message(chat_id=user_id, text=final_text, parse_mode="Markdown")
+    except Exception as e:
+        logging.error(f"Ошибка отправки финального сообщения: {e}")
     
     if user_id not in casting_users:
         casting_users[user_id] = direction_key
@@ -358,7 +364,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     casting_data.pop(user_id, None)
     user_answers.pop(user_id, None)
     context.user_data.clear()
-
 
 # ==================== РАССЫЛКА ====================
 
