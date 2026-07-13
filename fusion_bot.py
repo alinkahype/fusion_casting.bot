@@ -8,7 +8,7 @@ ADMIN_ID = 1431254201
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-# --- ВОПРОСЫ (ПРАВИЛЬНЫЕ) ---
+# --- ВОПРОСЫ ---
 QUESTIONS = [
     {
         "q": "Хочешь ли ты в универе заниматься активной творческой деятельностью и быть в центре коллектива?",
@@ -355,55 +355,65 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         
         try:
             await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
-            
-            recommendations = {
-                "music": (
-                    "🎤 **Для вокалистов и музыкантов:**\n"
-                    "• Возьми с собой минусовку песни (на флешке или телефоне)\n"
-                    "• Приходи распетым и готовым к выступлению\n"
-                    "• Красиво одетым и заряженным показать себя\n"
-                    "• Если играешь на инструменте — бери его с собой"
-                ),
-                "dance": (
-                    "💃 **Для танцоров:**\n"
-                    "• Удобная одежда и обувь для движения\n"
-                    "• Возьми с собой музыку (на флешке или телефоне)\n"
-                    "• Будь готов показать связку или импровизацию\n"
-                    "• Зарядись энергией и настроением!"
-                ),
-                "theatre": (
-                    "🎭 **Для театралов:**\n"
-                    "• Подготовь небольшой монолог или отрывок (1-2 минуты)\n"
-                    "• Можно принести стихотворение или прозу\n"
-                    "• Будь готов к импровизации и этюдам\n"
-                    "• Приходи в образе — покажи свою индивидуальность"
-                ),
-            }
-            
-            final_text = (
-                "✅ **Заявка отправлена!**\n\n"
-                "Спасибо! Мы свяжемся с тобой в ближайшее время.\n\n"
-                "---\n\n"
-                "📌 **Пока ты ждёшь кастинга — подписывайся на наши соцсети:**\n\n"
-                "📱 **Telegram-канал:** https://t.me/fusion_nstu\n"
-                "📱 **Группа ВКонтакте:** https://vk.com/fusion_nstu\n"
-                "📱 **Instagram:** https://www.instagram.com/fusion_nstu\n\n"
-                "---\n\n"
-                f"{recommendations.get(direction_key, '')}\n\n"
-                "🔥 **Ждём тебя! Всё получится!**"
-            )
-            
-            await update.message.reply_text(final_text, parse_mode="Markdown")
-            
-            if user_id not in casting_users:
-                casting_users[user_id] = direction_key
-            
         except Exception as e:
-            await update.message.reply_text(
-                "⚠️ Что-то пошло не так. Попробуй ещё раз позже.",
+            logging.error(f"Ошибка при отправке админу: {e}")
+        
+        # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ---
+        
+        recommendations = {
+            "music": (
+                "🎤 **Для вокалистов и музыкантов:**\n"
+                "• Возьми с собой минусовку песни (на флешке или телефоне)\n"
+                "• Приходи распетым и готовым к выступлению\n"
+                "• Красиво одетым и заряженным показать себя\n"
+                "• Если играешь на инструменте — бери его с собой"
+            ),
+            "dance": (
+                "💃 **Для танцоров:**\n"
+                "• Удобная одежда и обувь для движения\n"
+                "• Возьми с собой музыку (на флешке или телефоне)\n"
+                "• Будь готов показать связку или импровизацию\n"
+                "• Зарядись энергией и настроением!"
+            ),
+            "theatre": (
+                "🎭 **Для театралов:**\n"
+                "• Подготовь небольшой монолог или отрывок (1-2 минуты)\n"
+                "• Можно принести стихотворение или прозу\n"
+                "• Будь готов к импровизации и этюдам\n"
+                "• Приходи в образе — покажи свою индивидуальность"
+            ),
+        }
+        
+        final_text = (
+            "✅ **Заявка отправлена!**\n\n"
+            "Спасибо! Мы свяжемся с тобой в ближайшее время.\n\n"
+            "---\n\n"
+            "📌 **Пока ты ждёшь кастинга — подписывайся на наши соцсети:**\n\n"
+            "📱 **Telegram-канал:** https://t.me/fusion_nstu\n"
+            "📱 **Группа ВКонтакте:** https://vk.com/fusion_nstu\n"
+            "📱 **Instagram:** https://www.instagram.com/fusion_nstu\n\n"
+            "---\n\n"
+            f"{recommendations.get(direction_key, '')}\n\n"
+            "🔥 **Ждём тебя! Всё получится!**"
+        )
+        
+        # ОТПРАВКА ФИНАЛЬНОГО СООБЩЕНИЯ
+        try:
+            if update.callback_query:
+                await update.callback_query.edit_message_text(final_text, parse_mode="Markdown")
+            else:
+                await update.message.reply_text(final_text, parse_mode="Markdown")
+        except Exception as e:
+            logging.error(f"Ошибка при отправке финального сообщения: {e}")
+            # Запасной вариант — отправить новое сообщение
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=final_text,
                 parse_mode="Markdown"
             )
-            logging.error(f"Ошибка при отправке админу: {e}")
+        
+        if user_id not in casting_users:
+            casting_users[user_id] = direction_key
         
         # ПОЛНАЯ ОЧИСТКА
         casting_data.pop(user_id, None)
@@ -412,6 +422,14 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         
     except Exception as e:
         logging.error(f"finish_casting ERROR: {e}")
+        try:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="✅ **Заявка отправлена!**\n\nСпасибо! Мы свяжемся с тобой в ближайшее время.",
+                parse_mode="Markdown"
+            )
+        except:
+            pass
 
 
 # ==================== РАССЫЛКА ====================
