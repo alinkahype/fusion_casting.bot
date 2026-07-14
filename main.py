@@ -166,11 +166,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["waiting_for"] = None
         await ask_direction(update, context, user_id)
     
-    elif waiting_for == "experience_place":
-        casting_data.setdefault(user_id, {})["experience_place"] = text
-        context.user_data["waiting_for"] = None
-        await finish_casting(update, context, user_id)
-    
     else:
         await update.message.reply_text("Нажми /start, чтобы начать")
 
@@ -219,13 +214,13 @@ async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            "📝 **Опыт**\n\nКакой у тебя опыт?",
+            "📝 **Шаг 4 из 4: Опыт**\n\nКакой у тебя опыт?",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            "📝 **Опыт**\n\nКакой у тебя опыт?",
+            "📝 **Шаг 4 из 4: Опыт**\n\nКакой у тебя опыт?",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
@@ -236,13 +231,12 @@ async def experience_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.answer()
     user_id = query.from_user.id
     experience = query.data.replace("exp_", "")
-    casting_data[user_id]["experience"] = experience
-    context.user_data["waiting_for"] = "experience_place"
     
-    await query.edit_message_text(
-        "📝 **Где ты занимался творчеством раньше?**\n\nНапиши в сообщении. Если ничего не было — напиши «Нигде».",
-        parse_mode="Markdown"
-    )
+    # ДОБАВЛЯЕМ ОПЫТ В ДАННЫЕ
+    casting_data.setdefault(user_id, {})["experience"] = experience
+    
+    # МГНОВЕННО ОТПРАВЛЯЕМ СООБЩЕНИЕ ПОСЛЕ НАЖАТИЯ КНОПКИ
+    await finish_casting(update, context, user_id)
 
 
 # ==================== ФИНАЛ ====================
@@ -274,14 +268,14 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         f"📅 Возраст: {data.get('age', '—')}\n"
         f"🎭 Направление: {direction_map.get(direction_key, '—')}\n"
         f"📊 Опыт: {experience_map.get(data.get('experience', ''), '—')}\n"
-        f"📍 Где занимался: {data.get('experience_place', '—')}\n\n"
+        f"📍 Где занимался: (не указано)\n\n"
         f"📝 Ответы на опрос:\n{answers_text}\n\n"
         f"🆔 ID: {user_id}\n"
         f"👤 Username: @{update.effective_user.username or 'нет'}"
     )
     await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
     
-    # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ (УБРАЛИ МАРКДАУН, ТЕПЕРЬ 100% РАБОТАЕТ) ---
+    # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ---
     recommendations = {
         "music": "🎤 Для вокалистов и музыкантов:\n• Возьми минусовку\n• Приходи распетым\n• Если играешь — бери инструмент",
         "dance": "💃 Для танцоров:\n• Удобная одежда\n• Возьми музыку\n• Будь готов к импровизации",
@@ -301,7 +295,7 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         f"🔥 Ждём тебя!"
     )
     
-    # ПРОСТО ОТПРАВЛЯЕМ БЕЗ parse_mode, чтобы не было ошибок!
+    # ОТПРАВЛЯЕМ БЕЗ parse_mode, чтобы 100% работало
     await context.bot.send_message(chat_id=user_id, text=final_text)
     
     if user_id not in casting_users:
