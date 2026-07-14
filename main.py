@@ -52,7 +52,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     text = (
-        "🎬 **ВСТУПАЙ В «ФЬЮЖН»!**\n\n"
+        "🎬 **ВСТУПАЙ ВО «ФЬЮЖН»!**\n\n"
         "Пройди опрос и заполни анкету, чтобы попасть на кастинг.\n\n"
         "👇 **Нажми на кнопку!**"
     )
@@ -137,7 +137,7 @@ async def consent_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
-    text = "📝 **Шаг 1 из 3: Имя и фамилия**\n\nНапиши свои **имя и фамилию**."
+    text = "📝 **Шаг 1 из 4: Имя и фамилия**\n\nНапиши свои **имя и фамилию**."
     if update.callback_query:
         await update.callback_query.edit_message_text(text, parse_mode="Markdown")
     else:
@@ -154,7 +154,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         casting_data.setdefault(user_id, {})["name"] = text
         context.user_data["waiting_for"] = "age"
         await update.message.reply_text(
-            "📝 **Шаг 2 из 3: Возраст**\n\nСколько тебе лет? Напиши число 👇",
+            "📝 **Шаг 2 из 4: Возраст**\n\nСколько тебе лет? Напиши число 👇",
             parse_mode="Markdown"
         )
     
@@ -182,13 +182,13 @@ async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            "📝 **Шаг 3 из 3: Выбери направление**",
+            "📝 **Шаг 3 из 4: Выбери направление**",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            "📝 **Шаг 3 из 3: Выбери направление**",
+            "📝 **Шаг 3 из 4: Выбери направление**",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
