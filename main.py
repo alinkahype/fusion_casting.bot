@@ -8,7 +8,7 @@ ADMIN_ID = 1431254201
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-# --- ВОПРОСЫ ---
+# --- ВОПРОСЫ (3 вопроса, 4-й убран) ---
 QUESTIONS = [
     {
         "q": "Хочешь ли ты в универе заниматься активной творческой деятельностью и быть в центре коллектива?",
@@ -32,14 +32,6 @@ QUESTIONS = [
             ("Движение, танец, пластика", "fire_dance"),
             ("Вокал, музыка, ритм, мелодия", "fire_music"),
             ("Перевоплощение, игра на сцене, образы", "fire_theatre"),
-        ],
-    },
-    {
-        "q": "Что бы ты хотел делать в студии?",
-        "options": [
-            ("Петь или играть на инструменте", "do_music"),
-            ("Танцевать", "do_dance"),
-            ("Играть на сцене", "do_theatre"),
         ],
     },
 ]
@@ -108,11 +100,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if q_index + 1 < len(QUESTIONS):
         await ask_question(update, context, q_index + 1)
     else:
+        # После 3-го вопроса сразу переходим к согласию
         casting_data[user_id] = {}
         await ask_consent(update, context, user_id)
 
 
-# ==================== СОГЛАСИЕ ====================
+# ==================== СОГЛАСИЕ И АНКЕТА ====================
 
 async def ask_consent(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     keyboard = [
@@ -144,10 +137,8 @@ async def consent_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ask_name(update, context, user_id)
 
 
-# ==================== АНКЕТА (ТЕКСТ) ====================
-
 async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
-    text = "📝 **Шаг 1 из 4: Имя и фамилия**\n\nНапиши свои **имя и фамилию**."
+    text = "📝 **Шаг 1 из 3: Имя и фамилия**\n\nНапиши свои **имя и фамилию**."
     if update.callback_query:
         await update.callback_query.edit_message_text(text, parse_mode="Markdown")
     else:
@@ -164,7 +155,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         casting_data.setdefault(user_id, {})["name"] = text
         context.user_data["waiting_for"] = "age"
         await update.message.reply_text(
-            "📝 **Шаг 2 из 4: Возраст**\n\nСколько тебе лет? Напиши число 👇",
+            "📝 **Шаг 2 из 3: Возраст**\n\nСколько тебе лет? Напиши число 👇",
             parse_mode="Markdown"
         )
     
@@ -179,7 +170,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif waiting_for == "experience_place":
         casting_data.setdefault(user_id, {})["experience_place"] = text
         context.user_data["waiting_for"] = None
-        # ОТПРАВЛЯЕМ ВСЁ И ФИНАЛЬНОЕ СООБЩЕНИЕ
+        # ОТПРАВЛЯЕМ ФИНАЛЬНОЕ СООБЩЕНИЕ
         await finish_casting(update, context, user_id)
     
     else:
@@ -198,13 +189,13 @@ async def ask_direction(update: Update, context: ContextTypes.DEFAULT_TYPE, user
     
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            "📝 **Шаг 3 из 4: Выбери направление**",
+            "📝 **Шаг 3 из 3: Выбери направление**",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            "📝 **Шаг 3 из 4: Выбери направление**",
+            "📝 **Шаг 3 из 3: Выбери направление**",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
@@ -230,13 +221,13 @@ async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            "📝 **Шаг 4 из 4: Опыт**\n\nКакой у тебя опыт?",
+            "📝 **Опыт**\n\nКакой у тебя опыт?",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
-            "📝 **Шаг 4 из 4: Опыт**\n\nКакой у тебя опыт?",
+            "📝 **Опыт**\n\nКакой у тебя опыт?",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
@@ -292,7 +283,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     )
     await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
     
-    # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ---
     recommendations = {
         "music": "🎤 **Для вокалистов и музыкантов:**\n• Возьми минусовку\n• Приходи распетым\n• Если играешь — бери инструмент",
         "dance": "💃 **Для танцоров:**\n• Удобная одежда\n• Возьми музыку\n• Будь готов к импровизации",
@@ -312,8 +302,12 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
         f"🔥 **Ждём тебя!**"
     )
     
-    # ОТПРАВЛЯЕМ НОВОЕ СООБЩЕНИЕ
-    await context.bot.send_message(chat_id=user_id, text=final_text, parse_mode="Markdown")
+    # Гарантированная отправка. Если не сработает с Маркдауном, отправит простым текстом.
+    try:
+        await context.bot.send_message(chat_id=user_id, text=final_text, parse_mode="Markdown")
+    except Exception:
+        # Отправка без разметки, если Маркдаун вызвал ошибку
+        await context.bot.send_message(chat_id=user_id, text=final_text)
     
     if user_id not in casting_users:
         casting_users[user_id] = direction_key
@@ -323,80 +317,12 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     context.user_data.clear()
 
 
-# ==================== РАССЫЛКА ====================
-
-async def send_casting(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
-        await update.message.reply_text("⛔ Нет доступа.")
-        return
-    
-    args = context.args
-    if len(args) < 2:
-        await update.message.reply_text(
-            "⚠️ Использование: `/send_casting [направление] [дата]`\n"
-            "Пример: `/send_casting вокал 25 июля, 18:00`",
-            parse_mode="Markdown"
-        )
-        return
-    
-    direction_input = args[0].lower()
-    date_time = " ".join(args[1:])
-    
-    direction_map_input = {
-        "вокал": "music", "музыка": "music",
-        "танец": "dance",
-        "театр": "theatre",
-        "все": "all",
-    }
-    
-    direction_key = direction_map_input.get(direction_input)
-    if not direction_key:
-        await update.message.reply_text("⚠️ Неизвестное направление. Доступные: вокал, танец, театр, музыка, все")
-        return
-    
-    users_to_send = []
-    if direction_key == "all":
-        users_to_send = list(casting_users.items())
-    else:
-        users_to_send = [(uid, d) for uid, d in casting_users.items() if d == direction_key]
-    
-    if not users_to_send:
-        await update.message.reply_text(f"📭 Нет заявок на «{direction_input}».")
-        return
-    
-    await update.message.reply_text(f"📤 Рассылка {len(users_to_send)} пользователям...")
-    
-    success = 0
-    fail = 0
-    direction_name_ru = {"music": "Вокал/Музыка", "dance": "Танец", "theatre": "Театр"}
-    
-    for user_id, user_direction in users_to_send:
-        try:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=(
-                    f"🎬 **Приглашение на кастинг!**\n\n"
-                    f"Направление: **{direction_name_ru.get(user_direction, '')}**\n"
-                    f"📅 Дата: **{date_time}**\n\n"
-                    f"Ждём тебя! 🔥"
-                ),
-                parse_mode="Markdown"
-            )
-            success += 1
-        except Exception as e:
-            fail += 1
-            logging.error(f"Ошибка {user_id}: {e}")
-    
-    await update.message.reply_text(f"✅ Отправлено: {success}\n❌ Не доставлено: {fail}")
-
-
 # ==================== ЗАПУСК ====================
 
 def main():
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("send_casting", send_casting))
     app.add_handler(CallbackQueryHandler(start_quiz, pattern="start_quiz"))
     app.add_handler(CallbackQueryHandler(button_handler, pattern=r"^q\d+\|"))
     app.add_handler(CallbackQueryHandler(consent_handler, pattern=r"^consent_"))
