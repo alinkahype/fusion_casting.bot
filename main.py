@@ -8,7 +8,7 @@ ADMIN_ID = 1431254201
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-# --- ВОПРОСЫ (3 вопроса, 4-й убран) ---
+# --- ВОПРОСЫ (3 вопроса) ---
 QUESTIONS = [
     {
         "q": "Хочешь ли ты в универе заниматься активной творческой деятельностью и быть в центре коллектива?",
@@ -100,7 +100,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if q_index + 1 < len(QUESTIONS):
         await ask_question(update, context, q_index + 1)
     else:
-        # После 3-го вопроса сразу переходим к согласию
         casting_data[user_id] = {}
         await ask_consent(update, context, user_id)
 
@@ -170,7 +169,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif waiting_for == "experience_place":
         casting_data.setdefault(user_id, {})["experience_place"] = text
         context.user_data["waiting_for"] = None
-        # ОТПРАВЛЯЕМ ФИНАЛЬНОЕ СООБЩЕНИЕ
         await finish_casting(update, context, user_id)
     
     else:
@@ -269,7 +267,7 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     answers = user_answers.get(user_id, [])
     answers_text = "\n".join([f"• {a}" for a in answers]) if answers else "Нет ответов"
     
-    # --- ОТПРАВКА АДМИНУ ---
+    # --- ОТПРАВКА АДМИНУ (оставляем Markdown) ---
     admin_message = (
         f"📩 **НОВАЯ ЗАЯВКА НА КАСТИНГ!**\n\n"
         f"👤 Имя и фамилия: {data.get('name', '—')}\n"
@@ -283,31 +281,28 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     )
     await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
     
+    # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ (УБРАЛИ МАРКДАУН, ТЕПЕРЬ 100% РАБОТАЕТ) ---
     recommendations = {
-        "music": "🎤 **Для вокалистов и музыкантов:**\n• Возьми минусовку\n• Приходи распетым\n• Если играешь — бери инструмент",
-        "dance": "💃 **Для танцоров:**\n• Удобная одежда\n• Возьми музыку\n• Будь готов к импровизации",
-        "theatre": "🎭 **Для театралов:**\n• Подготовь монолог (1-2 мин)\n• Можно стихотворение\n• Будь готов к этюдам",
+        "music": "🎤 Для вокалистов и музыкантов:\n• Возьми минусовку\n• Приходи распетым\n• Если играешь — бери инструмент",
+        "dance": "💃 Для танцоров:\n• Удобная одежда\n• Возьми музыку\n• Будь готов к импровизации",
+        "theatre": "🎭 Для театралов:\n• Подготовь монолог (1-2 мин)\n• Можно стихотворение\n• Будь готов к этюдам",
     }
     
     final_text = (
-        f"✅ **Заявка отправлена!**\n\n"
+        f"✅ Заявка отправлена!\n\n"
         f"Спасибо! Мы свяжемся с тобой.\n\n"
         f"---\n\n"
-        f"📌 **Подписывайся на нас:**\n"
+        f"📌 Подписывайся на нас:\n"
         f"📱 Telegram: https://t.me/fusion_nstu\n"
         f"📱 ВКонтакте: https://vk.com/fusion_nstu\n"
         f"📱 Instagram: https://www.instagram.com/fusion_nstu\n\n"
         f"---\n\n"
         f"{recommendations.get(direction_key, '')}\n\n"
-        f"🔥 **Ждём тебя!**"
+        f"🔥 Ждём тебя!"
     )
     
-    # Гарантированная отправка. Если не сработает с Маркдауном, отправит простым текстом.
-    try:
-        await context.bot.send_message(chat_id=user_id, text=final_text, parse_mode="Markdown")
-    except Exception:
-        # Отправка без разметки, если Маркдаун вызвал ошибку
-        await context.bot.send_message(chat_id=user_id, text=final_text)
+    # ПРОСТО ОТПРАВЛЯЕМ БЕЗ parse_mode, чтобы не было ошибок!
+    await context.bot.send_message(chat_id=user_id, text=final_text)
     
     if user_id not in casting_users:
         casting_users[user_id] = direction_key
