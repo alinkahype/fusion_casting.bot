@@ -239,7 +239,7 @@ async def experience_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await finish_casting(update, context, user_id)
 
 
-# ==================== ФИНАЛ ====================
+# ==================== ФИНАЛ (БЕЗ МАРКДАУНА ДЛЯ АДМИНА) ====================
 
 async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     data = casting_data.get(user_id, {})
@@ -261,19 +261,19 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     answers = user_answers.get(user_id, [])
     answers_text = "\n".join([f"• {a}" for a in answers]) if answers else "Нет ответов"
     
-    # --- ОТПРАВКА АДМИНУ (оставляем Markdown) ---
+    # --- ОТПРАВКА АДМИНУ (УБРАЛИ parse_mode, ЧТОБЫ НИКОГДА НЕ ПАДАЛО) ---
     admin_message = (
-        f"📩 **НОВАЯ ЗАЯВКА НА КАСТИНГ!**\n\n"
+        f"📩 НОВАЯ ЗАЯВКА НА КАСТИНГ!\n\n"
         f"👤 Имя и фамилия: {data.get('name', '—')}\n"
         f"📅 Возраст: {data.get('age', '—')}\n"
         f"🎭 Направление: {direction_map.get(direction_key, '—')}\n"
-        f"📊 Опыт: {experience_map.get(data.get('experience', ''), '—')}\n"
-        f"📍 Где занимался: (не указано)\n\n"
+        f"📊 Опыт: {experience_map.get(data.get('experience', ''), '—')}\n\n"
         f"📝 Ответы на опрос:\n{answers_text}\n\n"
         f"🆔 ID: {user_id}\n"
         f"👤 Username: @{update.effective_user.username or 'нет'}"
     )
-    await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message, parse_mode="Markdown")
+    # ОТПРАВЛЯЕМ БЕЗ parse_mode!
+    await context.bot.send_message(chat_id=ADMIN_ID, text=admin_message)
     
     # --- ФИНАЛЬНОЕ СООБЩЕНИЕ ПОЛЬЗОВАТЕЛЮ ---
     recommendations = {
