@@ -205,7 +205,6 @@ async def direction_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def ask_experience(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     keyboard = [
-        [InlineKeyboardButton("🌱 Нет опыта", callback_data="exp_none")],
         [InlineKeyboardButton("🌿 До 1 года", callback_data="exp_beginner")],
         [InlineKeyboardButton("🌳 1-3 года", callback_data="exp_intermediate")],
         [InlineKeyboardButton("🔥 3+ года", callback_data="exp_pro")],
@@ -251,7 +250,6 @@ async def finish_casting(update: Update, context: ContextTypes.DEFAULT_TYPE, use
     }
     
     experience_map = {
-        "none": "🌱 Нет опыта",
         "beginner": "🌿 До 1 года",
         "intermediate": "🌳 1-3 года",
         "pro": "🔥 3+ года",
